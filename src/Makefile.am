@@ -6,7 +6,7 @@ noinst_HEADERS = pifs_backend.h
 
 __fs_SOURCES=πfs.c piqpr8.c pifs_backend.c
 
-__fs_LDADD = $(FUSE_LIBS) -lm
+__fs_LDADD = $(FUSE_LIBS) -lm -pthread
 
 check_PROGRAMS = test_piqpr8
 

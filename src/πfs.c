@@ -201,6 +201,9 @@ static int pifs_write(const char *path, const char *buf, size_t count,
         break;
       }
     }
+    if (index == SHRT_MAX) {
+      return -EIO;
+    }
     ret = write(info->fh, &index, sizeof index);
     if (ret == -1) {
       return -errno;
