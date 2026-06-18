@@ -75,6 +75,15 @@ static int pifs_fdatasync(int fd)
 #endif
 }
 
+static off_t pifs_dirent_offset(DIR *dir, const struct dirent *de)
+{
+#ifdef HAVE_STRUCT_DIRENT_D_OFF
+  return de->d_off;
+#else
+  return telldir(dir);
+#endif
+}
+
 static int pifs_getattr(const char *path, struct stat *buf)
 {
   FULL_PATH(path);
@@ -336,7 +345,7 @@ static int pifs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
       }
     }
 
-    ret = filler(buf, de->d_name, NULL, de->d_off);
+    ret = filler(buf, de->d_name, NULL, pifs_dirent_offset(dir, de));
   } while (ret == 0);
 
   return 0;

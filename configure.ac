@@ -13,6 +13,8 @@ AC_LANG_C
 # Checks for header files
 AC_HEADER_DIRENT
 AC_HEADER_STDC
+AC_CHECK_MEMBERS([struct dirent.d_off], [], [],
+                 [[#include <dirent.h>]])
 
 PKG_PROG_PKG_CONFIG
 macfuse_root="/Library/Filesystems/macfuse.fs/Contents/Resources"
@@ -30,7 +32,8 @@ AS_IF([test "x$have_fuse" != "xyes"],
 
 save_CPPFLAGS="$CPPFLAGS"
 CPPFLAGS="$CPPFLAGS $FUSE_CFLAGS"
-AC_CHECK_HEADERS([fuse/fuse.h fuse.h], [break])
+AC_CHECK_HEADERS([fuse/fuse.h fuse.h], [break], [],
+                 [[#define FUSE_USE_VERSION 26]])
 CPPFLAGS="$save_CPPFLAGS"
 
 AS_IF([test "x$ac_cv_header_fuse_fuse_h" != "xyes" &&
