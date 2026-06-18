@@ -13,8 +13,12 @@
 
 /*  David H. Bailey     2006-09-08 */
 
-#include <stdio.h>
+#include <limits.h>
 #include <math.h>
+#include <pthread.h>
+#include <stdio.h>
+
+#include "pifs_backend.h"
 
 static double expm (double p, double ak)
 
@@ -99,7 +103,7 @@ static double series (int m, int id)
   return s;
 }
 
-unsigned char get_byte(int id)
+unsigned char get_pi_byte(int id)
 {
   double s1 = series (1, id);
   double s2 = series (4, id);
@@ -116,4 +120,59 @@ unsigned char get_byte(int id)
   return (first << 4) | second;
 }
 
+/*
+ * Generate hexadecimal digits of the fractional part of e using
+ * e - 2 = 1/2! + 1/3! + ... represented as mixed-radix remainders.
+ */
+#define E_HEX_DIGIT_CACHE_SIZE (SHRT_MAX + 2)
+#define E_DIGIT_TERMS 11200
 
+static pthread_mutex_t e_mutex = PTHREAD_MUTEX_INITIALIZER;
+static int e_initialized = 0;
+static int e_hex_digit_count = 0;
+static int e_remainders[E_DIGIT_TERMS + 1];
+static unsigned char e_hex_digits[E_HEX_DIGIT_CACHE_SIZE];
+
+static void init_e_remainders(void)
+{
+  if (e_initialized) {
+    return;
+  }
+
+  for (int i = 1; i <= E_DIGIT_TERMS; i++) {
+    e_remainders[i] = 1;
+  }
+
+  e_initialized = 1;
+}
+
+static unsigned char next_e_hex_digit(void)
+{
+  int carry = 0;
+
+  for (int i = E_DIGIT_TERMS; i > 0; i--) {
+    int value = 16 * e_remainders[i] + carry;
+    e_remainders[i] = value % (i + 1);
+    carry = value / (i + 1);
+  }
+
+  return (unsigned char) carry;
+}
+
+unsigned char get_e_byte(int id)
+{
+  if (id < 0 || id + 1 >= E_HEX_DIGIT_CACHE_SIZE) {
+    return 0;
+  }
+
+  pthread_mutex_lock(&e_mutex);
+  init_e_remainders();
+
+  while (e_hex_digit_count <= id + 1) {
+    e_hex_digits[e_hex_digit_count++] = next_e_hex_digit();
+  }
+
+  unsigned char ret = (e_hex_digits[id] << 4) | e_hex_digits[id + 1];
+  pthread_mutex_unlock(&e_mutex);
+  return ret;
+}
