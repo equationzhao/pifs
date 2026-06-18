@@ -42,10 +42,12 @@
 #error "No FUSE header available"
 #endif
 
-unsigned char get_byte(int id);
+#include "pifs_backend.h"
 
 struct options {
   char *mdd;
+  char *constant_name;
+  const struct pifs_backend *backend;
 } options;
 
 /** macro to define options */
@@ -54,6 +56,8 @@ struct options {
 static struct fuse_opt pifs_opts[] =
 {
   PIFS_OPT_KEY("mdd=%s", mdd, 0),
+  PIFS_OPT_KEY("constant=%s", constant_name, 0),
+  FUSE_OPT_END
 };
 
 static void pifs_full_path(char full_path[PATH_MAX], const char *path)
@@ -82,6 +86,11 @@ static off_t pifs_dirent_offset(DIR *dir, const struct dirent *de)
 #else
   return telldir(dir);
 #endif
+}
+
+static unsigned char pifs_get_byte(int id)
+{
+  return options.backend->get_byte(id);
 }
 
 static int pifs_getattr(const char *path, struct stat *buf)
@@ -211,7 +220,7 @@ static int pifs_read(const char *path, char *buf, size_t count, off_t offset,
     } else if (ret == 0) {
       return i;
     }
-    *buf = (char) get_byte(index);
+    *buf = (char) pifs_get_byte(index);
     buf++;
   }
 
@@ -228,8 +237,9 @@ static int pifs_write(const char *path, const char *buf, size_t count,
 
   for (size_t i = 0; i < count; i++) {
     short index;
+    unsigned char target = (unsigned char) *buf;
     for (index = 0; index < SHRT_MAX; index++) {
-      if (get_byte(index) == *buf) {
+      if (pifs_get_byte(index) == target) {
         break;
       }
     }
@@ -474,6 +484,14 @@ int main (int argc, char *argv[])
     fprintf(stderr,
             "%s: Metadata directory must be specified with -o mdd=<directory>\n",
             argv[0]);
+    return -1;
+  }
+
+  options.backend = pifs_find_backend(options.constant_name);
+  if (!options.backend) {
+    fprintf(stderr,
+            "%s: Unsupported constant '%s'. Use one of: %s.\n",
+            argv[0], options.constant_name, pifs_backend_names());
     return -1;
   }
 

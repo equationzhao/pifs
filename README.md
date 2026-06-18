@@ -36,6 +36,17 @@ where the _metadata directory_ is where πfs should store its metadata (such
 as filenames or the locations of your files in π) and _mountpoint_ is your
 usual filesystem mountpoint.
 
+For a change of irrational scenery, you can store your data in e instead:
+
+```sh
+πfs -o mdd=<metadata directory>,constant=e <mountpoint>
+```
+
+The `constant` option accepts `pi`, `π`, or `e`, and defaults to `pi`.
+Use a separate metadata directory for each constant, because the stored
+locations only make sense for the constant they were written against.
+New constants can be added by registering another byte generator backend.
+
 What does π have to do with my data?
 ------------------------------------
 
@@ -107,4 +118,3 @@ There's lots of potential for the future!
 * Parallelizable lookup!
 * Cloud based π lookup!
 * πfs for Hadoop!
-
