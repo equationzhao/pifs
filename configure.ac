@@ -17,17 +17,19 @@ AC_CHECK_MEMBERS([struct dirent.d_off], [], [],
                  [[#include <dirent.h>]])
 
 PKG_PROG_PKG_CONFIG
-macfuse_root="/Library/Filesystems/macfuse.fs/Contents/Resources"
-AS_IF([test -d "$macfuse_root/lib/pkgconfig"],
-      [PKG_CONFIG_PATH="$macfuse_root/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+macfuse_prefix="/usr/local"
+AS_IF([test -d "$macfuse_prefix/lib/pkgconfig"],
+      [PKG_CONFIG_PATH="$macfuse_prefix/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
        export PKG_CONFIG_PATH])
 
 PKG_CHECK_MODULES([FUSE], [fuse >= 2.8], [have_fuse=yes], [have_fuse=no])
 AS_IF([test "x$have_fuse" != "xyes"],
-      [AS_IF([test -r "$macfuse_root/include/fuse.h" ||
-              test -r "$macfuse_root/include/fuse/fuse.h"],
-             [FUSE_CFLAGS="-I$macfuse_root/include"
-              FUSE_LIBS="-L$macfuse_root/lib -lfuse"],
+      [AS_IF([test -r "$macfuse_prefix/include/fuse/fuse.h"],
+             [FUSE_CFLAGS="-I$macfuse_prefix/include/fuse"
+              FUSE_LIBS="-L$macfuse_prefix/lib -lfuse -pthread"],
+             [test -r "$macfuse_prefix/include/fuse.h"],
+             [FUSE_CFLAGS="-I$macfuse_prefix/include"
+              FUSE_LIBS="-L$macfuse_prefix/lib -lfuse -pthread"],
              [AC_MSG_ERROR([FUSE 2 development files are required. On macOS, install macFUSE.])])])
 
 save_CPPFLAGS="$CPPFLAGS"
